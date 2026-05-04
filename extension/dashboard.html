@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TimeFlow Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f0f13; --bg-card: #1a1a23; --bg-hover: #22222e; --border: #2a2a38;
+      --text: #e8e8ef; --text-sec: #8888a0; --text-muted: #55556a;
+      --accent: #6366f1; --green: #22c55e; --radius: 12px;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
+      line-height: 1.6; -webkit-font-smoothing: antialiased;
+    }
+    .container { max-width: 960px; margin: 0 auto; padding: 32px 24px; }
+    header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; }
+    .logo { display: flex; align-items: center; gap: 10px; color: var(--accent); }
+    .logo svg { width: 28px; height: 28px; }
+    .logo h1 { font-size: 1.4rem; font-weight: 700; }
+    .subtitle { color: var(--text-sec); font-size: 0.9rem; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .stat-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; }
+    .stat-value { font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; }
+    .stat-label { font-size: 0.8rem; color: var(--text-sec); margin-top: 2px; }
+
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    @media (max-width: 700px) { .grid-2 { grid-template-columns: 1fr; } }
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 14px; }
+
+    .bar-chart { display: flex; flex-direction: column; gap: 10px; }
+    .bar-row { display: flex; align-items: center; gap: 10px; }
+    .bar-label { min-width: 90px; font-size: 0.85rem; color: var(--text-sec); }
+    .bar-bg { flex: 1; height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 5px; transition: width 0.5s ease; }
+    .bar-value { min-width: 45px; text-align: right; font-size: 0.85rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+    .timeline { display: flex; flex-direction: column; gap: 6px; max-height: 400px; overflow-y: auto; }
+    .timeline-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; }
+    .timeline-item:hover { background: var(--bg-hover); }
+    .timeline-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .timeline-label { flex: 1; font-weight: 500; }
+    .timeline-cat { font-size: 0.75rem; padding: 2px 8px; border-radius: 10px; }
+    .timeline-time { color: var(--text-sec); font-size: 0.8rem; white-space: nowrap; }
+    .timeline-dur { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+    .stacked-bar-container { display: flex; flex-direction: column; gap: 8px; }
+    .stacked-day-label { font-size: 0.8rem; color: var(--text-sec); min-width: 40px; }
+    .stacked-day { display: flex; align-items: center; gap: 8px; }
+    .stacked-bar { display: flex; height: 16px; border-radius: 4px; overflow: hidden; flex: 1; background: var(--bg); }
+    .stacked-segment { transition: width 0.3s ease; }
+    .stacked-total { font-size: 0.8rem; font-weight: 600; min-width: 40px; text-align: right; font-variant-numeric: tabular-nums; }
+
+    .empty { text-align: center; color: var(--text-muted); padding: 40px; }
+    .status-badge { font-size: 0.75rem; padding: 3px 10px; border-radius: 10px; font-weight: 600; }
+    .status-tracking { background: #22c55e20; color: #22c55e; }
+    .status-idle { background: #f59e0b20; color: #f59e0b; }
+    .status-paused { background: #ef444420; color: #ef4444; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <div>
+          <h1>TimeFlow Dashboard</h1>
+          <div class="subtitle">Auto-tracked browsing activity</div>
+        </div>
+      </div>
+      <span id="statusBadge" class="status-badge status-tracking">Tracking</span>
+    </header>
+
+    <div class="stats-row" id="statsRow"></div>
+
+    <div class="grid-2">
+      <div class="card">
+        <h2>Category Breakdown</h2>
+        <div id="categoryChart" class="bar-chart"></div>
+      </div>
+      <div class="card">
+        <h2>Top Sites</h2>
+        <div id="topSitesChart" class="bar-chart"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:24px">
+      <h2>Weekly Overview</h2>
+      <div id="weeklyChart" class="stacked-bar-container"></div>
+    </div>
+
+    <div class="card">
+      <h2>Today's Timeline</h2>
+      <div id="timeline" class="timeline"></div>
+    </div>
+  </div>
+
+  <script>
+    const CATEGORY_COLORS = {
+      Work: '#3b82f6', Health: '#22c55e', Learning: '#a855f7', Personal: '#f59e0b',
+      Entertainment: '#ec4899', Chores: '#6366f1', Social: '#14b8a6', Sleep: '#64748b',
+      Music: '#f97316', Other: '#78716c',
+    };
+
+    function fmtMin(m) {
+      if (m < 1) return '<1m';
+      const h = Math.floor(m / 60);
+      const mm = Math.round(m % 60);
+      return h > 0 ? h + 'h ' + mm + 'm' : mm + 'm';
+    }
+
+    function fmtDuration(ms) {
+      const s = Math.floor(ms / 1000);
+      const h = Math.floor(s / 3600);
+      const m = Math.floor((s % 3600) / 60);
+      const sec = s % 60;
+      if (h > 0) return h + 'h ' + String(m).padStart(2, '0') + 'm';
+      return m + 'm ' + String(sec).padStart(2, '0') + 's';
+    }
+
+    function fmtTime(ts) {
+      return new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function refresh() {
+      const [status, summary, todayData] = await Promise.all([
+        chrome.runtime.sendMessage({ type: 'GET_STATUS' }),
+        chrome.runtime.sendMessage({ type: 'GET_SUMMARY' }),
+        chrome.runtime.sendMessage({ type: 'GET_TODAY' }),
+      ]);
+
+      // Status badge
+      const badge = document.getElementById('statusBadge');
+      if (status.isPaused) {
+        badge.textContent = 'Paused'; badge.className = 'status-badge status-paused';
+      } else if (status.isIdle || !status.windowFocused) {
+        badge.textContent = 'Idle'; badge.className = 'status-badge status-idle';
+      } else {
+        badge.textContent = 'Tracking'; badge.className = 'status-badge status-tracking';
+      }
+
+      const today = summary.today;
+
+      // Stats
+      const topCat = Object.entries(today.categoryBreakdown).sort(([,a],[,b]) => b - a)[0];
+      document.getElementById('statsRow').innerHTML = [
+        { label: 'Time Tracked', value: fmtMin(today.totalMinutes) },
+        { label: 'Sites Visited', value: today.activityCount },
+        { label: 'Top Category', value: topCat ? topCat[0] : '—' },
+        { label: 'Currently', value: status.currentTab?.label || '—' },
+      ].map(s => '<div class="stat-card"><div class="stat-value">' + s.value + '</div><div class="stat-label">' + s.label + '</div></div>').join('');
+
+      // Category chart
+      const maxCat = Math.max(...Object.values(today.categoryBreakdown), 1);
+      document.getElementById('categoryChart').innerHTML = Object.entries(today.categoryBreakdown)
+        .sort(([,a],[,b]) => b - a)
+        .map(([cat, mins]) => {
+          const color = CATEGORY_COLORS[cat] || '#78716c';
+          return '<div class="bar-row"><span class="bar-label">' + cat + '</span><div class="bar-bg"><div class="bar-fill" style="width:' + (mins / maxCat * 100) + '%;background:' + color + '"></div></div><span class="bar-value">' + fmtMin(mins) + '</span></div>';
+        }).join('') || '<div class="empty">No data yet</div>';
+
+      // Top sites
+      const maxSite = today.topSites.length > 0 ? today.topSites[0].minutes : 1;
+      document.getElementById('topSitesChart').innerHTML = today.topSites.slice(0, 8)
+        .map(s => '<div class="bar-row"><span class="bar-label">' + s.label + '</span><div class="bar-bg"><div class="bar-fill" style="width:' + (s.minutes / maxSite * 100) + '%;background:var(--accent)"></div></div><span class="bar-value">' + fmtMin(s.minutes) + '</span></div>')
+        .join('') || '<div class="empty">No data yet</div>';
+
+      // Timeline
+      const activities = todayData.activities || [];
+      document.getElementById('timeline').innerHTML = activities.slice().reverse().slice(0, 50)
+        .map(a => {
+          const color = CATEGORY_COLORS[a.category] || '#78716c';
+          const dur = a.endTime - a.startTime;
+          return '<div class="timeline-item"><div class="timeline-dot" style="background:' + color + '"></div><span class="timeline-label">' + a.label + '</span><span class="timeline-cat" style="background:' + color + '20;color:' + color + '">' + a.category + '</span><span class="timeline-time">' + fmtTime(a.startTime) + ' - ' + fmtTime(a.endTime) + '</span><span class="timeline-dur">' + fmtDuration(dur) + '</span></div>';
+        }).join('') || '<div class="empty">No activities tracked yet today</div>';
+
+      // Weekly chart
+      const history = summary.history || {};
+      const weekDays = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        const key = d.toISOString().split('T')[0];
+        const label = d.toLocaleDateString([], { weekday: 'short' });
+        const data = i === 0 ? { totalMinutes: today.totalMinutes, categoryBreakdown: today.categoryBreakdown } : (history[key] || { totalMinutes: 0, categoryBreakdown: {} });
+        weekDays.push({ label, ...data });
+      }
+      const maxWeek = Math.max(...weekDays.map(d => d.totalMinutes), 1);
+      document.getElementById('weeklyChart').innerHTML = weekDays.map(day => {
+        const segments = Object.entries(day.categoryBreakdown || {})
+          .filter(([,v]) => v > 0)
+          .map(([cat, mins]) => '<div class="stacked-segment" style="width:' + (mins / maxWeek * 100) + '%;background:' + (CATEGORY_COLORS[cat] || '#78716c') + '" title="' + cat + ': ' + fmtMin(mins) + '"></div>')
+          .join('');
+        return '<div class="stacked-day"><span class="stacked-day-label">' + day.label + '</span><div class="stacked-bar">' + segments + '</div><span class="stacked-total">' + fmtMin(day.totalMinutes) + '</span></div>';
+      }).join('');
+    }
+
+    refresh();
+    setInterval(refresh, 5000);
+  </script>
+</body>
+</html>

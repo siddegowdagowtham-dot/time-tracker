@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TimeFlow Settings</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f0f13; --bg-card: #1a1a23; --border: #2a2a38;
+      --text: #e8e8ef; --text-sec: #8888a0; --accent: #6366f1; --accent-hover: #818cf8;
+      --danger: #ef4444; --green: #22c55e;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text);
+      padding: 40px; max-width: 700px; margin: 0 auto; line-height: 1.6;
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; color: var(--accent); }
+    p.subtitle { color: var(--text-sec); font-size: 0.9rem; margin-bottom: 24px; }
+    .section { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    h2 { font-size: 1rem; margin-bottom: 14px; }
+    .rule-list { display: flex; flex-direction: column; gap: 8px; }
+    .rule-row { display: flex; gap: 8px; align-items: center; }
+    .rule-row input, .rule-row select {
+      padding: 8px 12px; background: var(--bg); border: 1px solid var(--border);
+      border-radius: 8px; color: var(--text); font-size: 0.85rem; outline: none;
+    }
+    .rule-row input:focus, .rule-row select:focus { border-color: var(--accent); }
+    .rule-row input { flex: 1; }
+    .rule-row select { min-width: 120px; }
+    .btn { padding: 8px 16px; border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: 0.15s; }
+    .btn-primary { background: var(--accent); color: white; }
+    .btn-primary:hover { background: var(--accent-hover); }
+    .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+    .btn-danger:hover { background: var(--danger); color: white; }
+    .btn-sm { padding: 4px 10px; font-size: 0.8rem; }
+    .actions { display: flex; gap: 8px; margin-top: 14px; }
+    .toast { position: fixed; bottom: 20px; right: 20px; background: var(--green); color: white; padding: 10px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; display: none; }
+    .default-rules { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .default-tag { font-size: 0.75rem; padding: 3px 10px; border-radius: 12px; border: 1px solid var(--border); color: var(--text-sec); }
+    .export-section { display: flex; gap: 10px; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <h1>TimeFlow Settings</h1>
+  <p class="subtitle">Configure auto-categorization rules and export your data.</p>
+
+  <div class="section">
+    <h2>Custom Category Rules</h2>
+    <p style="font-size:0.8rem;color:var(--text-sec);margin-bottom:12px">
+      Add rules to override the default categorization. Rules are matched against the URL.
+    </p>
+    <div id="ruleList" class="rule-list"></div>
+    <div class="actions">
+      <button id="addRuleBtn" class="btn btn-primary">+ Add Rule</button>
+      <button id="saveRulesBtn" class="btn btn-primary">Save</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Default Rules</h2>
+    <p style="font-size:0.8rem;color:var(--text-sec);margin-bottom:8px">
+      These are the built-in rules. Custom rules above take priority.
+    </p>
+    <div id="defaultRules" class="default-rules"></div>
+  </div>
+
+  <div class="section">
+    <h2>Data Management</h2>
+    <div class="export-section">
+      <button id="exportBtn" class="btn btn-primary">Export Data (JSON)</button>
+      <button id="clearBtn" class="btn btn-danger">Clear All Data</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">Saved!</div>
+
+  <script type="module">
+    const CATEGORIES = ['Work','Health','Learning','Personal','Entertainment','Chores','Social','Sleep','Music','Other'];
+    let customRules = [];
+
+    async function loadRules() {
+      const result = await chrome.storage.sync.get('customRules');
+      customRules = result.customRules || [];
+      renderRules();
+    }
+
+    function renderRules() {
+      const list = document.getElementById('ruleList');
+      list.innerHTML = customRules.map((rule, i) => `
+        <div class="rule-row">
+          <input type="text" value="${rule.pattern}" placeholder="e.g. github.com" data-index="${i}" data-field="pattern" />
+          <select data-index="${i}" data-field="category">
+            ${CATEGORIES.map(c => `<option value="${c}" ${c === rule.category ? 'selected' : ''}>${c}</option>`).join('')}
+          </select>
+          <input type="text" value="${rule.label || ''}" placeholder="Label" data-index="${i}" data-field="label" style="max-width:100px" />
+          <button class="btn btn-danger btn-sm" data-remove="${i}">x</button>
+        </div>
+      `).join('');
+
+      list.querySelectorAll('input, select').forEach(el => {
+        el.addEventListener('change', () => {
+          const idx = parseInt(el.dataset.index);
+          const field = el.dataset.field;
+          customRules[idx][field] = el.value;
+        });
+      });
+
+      list.querySelectorAll('[data-remove]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          customRules.splice(parseInt(btn.dataset.remove), 1);
+          renderRules();
+        });
+      });
+    }
+
+    document.getElementById('addRuleBtn').addEventListener('click', () => {
+      customRules.push({ pattern: '', category: 'Work', label: '' });
+      renderRules();
+    });
+
+    document.getElementById('saveRulesBtn').addEventListener('click', async () => {
+      await chrome.storage.sync.set({ customRules: customRules.filter(r => r.pattern) });
+      showToast('Saved!');
+    });
+
+    document.getElementById('exportBtn').addEventListener('click', async () => {
+      const data = await chrome.runtime.sendMessage({ type: 'GET_ACTIVITIES_EXPORT' });
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `timeflow-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.click(); URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', async () => {
+      if (confirm('This will delete all tracked activity data. Are you sure?')) {
+        await chrome.storage.local.clear();
+        showToast('Data cleared');
+      }
+    });
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 2000);
+    }
+
+    // Show default rules
+    import('./utils/categories.js').then(({ DEFAULT_RULES }) => {
+      document.getElementById('defaultRules').innerHTML = DEFAULT_RULES.map(r =>
+        `<span class="default-tag">${r.pattern} → ${r.category}</span>`
+      ).join('');
+    }).catch(() => {
+      // Module import may fail in options page context
+      document.getElementById('defaultRules').innerHTML = '<span class="default-tag">Loading...</span>';
+    });
+
+    loadRules();
+  </script>
+</body>
+</html>
