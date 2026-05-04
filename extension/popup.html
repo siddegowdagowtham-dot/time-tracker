@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TimeFlow</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="popup">
+    <header class="popup-header">
+      <div class="logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span>TimeFlow</span>
+      </div>
+      <button id="pauseBtn" class="icon-btn" title="Pause/Resume tracking">
+        <svg id="pauseIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+        </svg>
+        <svg id="playIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+      </button>
+    </header>
+
+    <!-- Current Status -->
+    <div id="currentStatus" class="status-card">
+      <div class="status-indicator">
+        <div id="statusDot" class="dot tracking"></div>
+        <span id="statusText">Tracking</span>
+      </div>
+      <div id="currentSite" class="current-site">
+        <div id="currentLabel" class="site-label">—</div>
+        <div id="currentCategory" class="site-category">—</div>
+      </div>
+      <div id="currentDuration" class="current-duration">0m 00s</div>
+    </div>
+
+    <!-- Audio indicator -->
+    <div id="audioSection" class="audio-section" style="display:none">
+      <div class="section-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+        </svg>
+        <span>Background Audio</span>
+      </div>
+      <div id="audioList" class="audio-list"></div>
+    </div>
+
+    <!-- Today's Summary -->
+    <div class="summary-section">
+      <div class="section-label">
+        <span>Today</span>
+        <span id="totalTime" class="total-time">0m</span>
+      </div>
+      <div id="categoryBars" class="category-bars"></div>
+      <div id="topSites" class="top-sites"></div>
+    </div>
+
+    <!-- Footer -->
+    <div class="popup-footer">
+      <a id="openDashboard" href="#" class="footer-link">Open Dashboard</a>
+      <a id="openOptions" href="#" class="footer-link">Settings</a>
+    </div>
+  </div>
+
+  <script src="popup.js" type="module"></script>
+</body>
+</html>
